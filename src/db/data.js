@@ -887,7 +887,7 @@ export const data = [
     price2: 80,
     tube: "tapa rojo ó amarillo",
     info: "SE RECOMIENDA AYUNO DE 8 HORAS ANTES DE LA PRUEBA.",
-    time: "6 días",
+    time: "1 día",
     quantity: 1,
   },
   {
@@ -1759,8 +1759,8 @@ export const data = [
     name: "helicobacter pylori total(prueba rapida)",
     sample: "suero",
     method: "cromatografia",
-    price1: 35,
-    price2: 28,
+    price1: 45,
+    price2: 35,
     tube: "tubo rojo",
     info: "se recomienda ayuno de 8 horas.",
     time: "1 hora",
@@ -1787,7 +1787,7 @@ export const data = [
     price2: 40,
     tube: "tubo rojo",
     info: "se recomienda ayuno de 8 horas.",
-    time: "día",
+    time: "1 día",
     quantity: 1,
   },
   {

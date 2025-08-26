@@ -216,7 +216,7 @@ const ProductsList = ({ products }) => {
       </nav>
       {/* Carrusel de promociones debajo del nav */}
       {promociones.length > 0 ? (
-  <div className="w-full flex justify-center mb-2 pt-6 sm:pt-0">
+  <div className="w-full flex justify-center mb-2 pt-10 sm:pt-0">
           <div className="max-w-xs w-full bg-white rounded-lg shadow-md overflow-hidden flex flex-row items-center animate-fade-in relative p-2 gap-2 border-2 border-[#01878A]">
             <img src={promociones[promoIndex].image} alt={promociones[promoIndex].title} className="w-16 h-16 object-cover bg-[#b2e4e5] rounded" />
             <div className="flex-1 flex flex-col gap-1">
