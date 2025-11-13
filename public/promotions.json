@@ -1,18 +1,22 @@
 [
   {
-  "id": "promo-1",
+    "id": "promo-1",
     "title": "La ACTH, o hormona adrenocorticotrópica",
     "description": "Obtén un ACTH a solo S/ 50.00 por tiempo limitado.",
     "longDescription": "La ACTH es una hormona producida por la glándula pituitaria que estimula la producción de cortisol en las glándulas suprarrenales. Este examen es útil para el diagnóstico de trastornos hormonales y enfermedades relacionadas con el estrés y el metabolismo. Resultados en 24 horas. Requiere ayuno de 8 horas.",
     "price": 50.00,
+    "price1": 50.00,
+    "name": "ACTH",
     "image": "/tarifario-inbioslab/promos/promo2.png"
   },
   {
-  "id": "promo-2",
+    "id": "promo-2",
     "title": "La DHEA, o deshidroepiandrosterona",
     "description": "Descuento especial en DHEA: solo por S/ 50.00.",
     "longDescription": "La DHEA es una hormona producida por las glándulas suprarrenales, importante para el equilibrio hormonal y la salud general. Este examen ayuda a evaluar el funcionamiento de las glándulas y detectar posibles alteraciones endocrinas. Resultados en 24 horas. No requiere ayuno.",
     "price": 50.00,
+    "price1": 50.00,
+    "name": "DHEA",
     "image": "/tarifario-inbioslab/promos/promo1.png"
   }
 ]

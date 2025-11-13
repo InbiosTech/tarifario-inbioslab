@@ -1,6 +1,13 @@
 import PropTypes from "prop-types";
+import { useRef, useEffect } from "react";
 
-function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento, onChangePaciente, onChangeQty, onRemoveItem, onApplyCupon, onClose, onClearAll, onExportPDF }) {
+function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento, onChangePaciente, onChangeQty, onRemoveItem, onChangePrice, onApplyCupon, onClose, onClearAll, onExportPDF }) {
+  const nombreInputRef = useRef(null);
+  useEffect(() => {
+    if (nombreInputRef.current) {
+      nombreInputRef.current.focus();
+    }
+  }, []);
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md flex flex-col mt-16">
@@ -12,8 +19,9 @@ function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento,
             type="text"
             className="border rounded px-3 py-2 w-full text-sm"
             placeholder="Nombre del paciente"
-            value={paciente.nombre}
-            onChange={e => onChangePaciente({ ...paciente, nombre: e.target.value })}
+            value={paciente.nombre.toUpperCase()}
+            onChange={e => onChangePaciente({ ...paciente, nombre: e.target.value.toUpperCase() })}
+            ref={nombreInputRef}
           />
           <div className="flex gap-2">
             <input
@@ -76,7 +84,12 @@ function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento,
             {cart.map((item) => (
               <div key={item.id} className="flex items-center justify-between bg-white rounded p-2 shadow">
                 <div className="flex flex-col">
-                  <span className="font-semibold text-blue-700">{item.name.toUpperCase()}</span>
+                  <div className="flex items-center gap-2">
+                    {item.image && (
+                      <img src={item.image} alt={item.name} className="w-8 h-8 object-cover rounded" />
+                    )}
+                    <span className="font-semibold text-blue-700">{item.name.toUpperCase()}</span>
+                  </div>
                   <span className="text-xs text-gray-500">ID: {item.id}</span>
                 </div>
                 <div className="flex items-center gap-2">
@@ -87,7 +100,14 @@ function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento,
                     className="w-14 px-2 py-1 border rounded text-center"
                     onChange={e => onChangeQty(item.id, Number(e.target.value))}
                   />
-                  <span className="text-green-700 font-bold">S/ {tipoCotizacion === "convenio" ? item.price2 : item.price1}</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={tipoCotizacion === "convenio" ? item.price2 : item.price1}
+                    className="w-20 px-2 py-1 border rounded text-center font-bold text-green-700"
+                    onChange={e => onChangePrice(item.id, Number(e.target.value), tipoCotizacion)}
+                  />
+                  <span className="text-xs text-gray-500">S/</span>
                   <button
                     className="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs font-semibold"
                     onClick={() => onRemoveItem(item.id)}
@@ -137,6 +157,7 @@ CartModal.propTypes = {
   onChangePaciente: PropTypes.func.isRequired,
   onChangeQty: PropTypes.func.isRequired,
   onRemoveItem: PropTypes.func.isRequired,
+  onChangePrice: PropTypes.func.isRequired,
   onApplyCupon: PropTypes.func.isRequired,
   onClose: PropTypes.func.isRequired,
   onClearAll: PropTypes.func.isRequired,

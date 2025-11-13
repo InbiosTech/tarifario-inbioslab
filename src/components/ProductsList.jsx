@@ -215,6 +215,16 @@ const ProductsList = ({ products }) => {
           onChangePaciente={setPaciente}
           onChangeQty={handleChangeQty}
           onRemoveItem={id => setCart(prev => prev.filter(p => p.id !== id))}
+          onChangePrice={(id, value, tipo) => {
+            setCart(prev => prev.map(item => {
+              if (item.id !== id) return item;
+              if (tipo === "convenio") {
+                return { ...item, price2: value };
+              } else {
+                return { ...item, price1: value };
+              }
+            }));
+          }}
           onApplyCupon={value => {
             if (typeof value === 'string') {
               setCuponInput(value);
@@ -259,7 +269,10 @@ const ProductsList = ({ products }) => {
             let y = drawPdfPatientData(doc, paciente, tipoCotizacion);
             y = drawPdfQuotationTable(doc, cart, tipoCotizacion, cuponDescuento, y);
             drawPdfFooter(doc, tipoCotizacion, cuponDescuento, cuponInput, y);
-            doc.save(`cotizacion_inbioslab_${Date.now()}.pdf`);
+            const fecha = new Date();
+            const fechaStr = `${fecha.getFullYear()}-${String(fecha.getMonth()+1).padStart(2,'0')}-${String(fecha.getDate()).padStart(2,'0')}`;
+            const nombrePaciente = paciente.nombre ? paciente.nombre.replace(/\s+/g, '_').toUpperCase() : 'PACIENTE';
+            doc.save(`cotizacion_${nombrePaciente}_${fechaStr}.pdf`);
           }}
         />
       )}
