@@ -8,6 +8,23 @@ function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento,
       nombreInputRef.current.focus();
     }
   }, []);
+
+  // Función para abrir WhatsApp Web con el número y mensaje
+  const handleSendWhatsApp = () => {
+    if (!paciente.celular) {
+      alert("Por favor ingresa el número de celular del paciente.");
+      return;
+    }
+    // Formato internacional: +51 para Perú, quitar ceros y espacios
+    let numero = paciente.celular.replace(/\D/g, "");
+    if (!numero.startsWith("51")) {
+      numero = "51" + numero;
+    }
+    const mensaje = encodeURIComponent(
+      `Estimado/a ${paciente.nombre.toUpperCase()},\n\nAdjuntamos la cotización de tus pruebas solicitadas en INBIOSLAB.\n\nPor favor revisa el archivo PDF descargado y si tienes alguna consulta, no dudes en contactarnos.\n\nGracias por confiar en nuestro laboratorio clínico.\n\nSaludos,\nINBIOSLAB`
+    );
+    window.open(`https://wa.me/${numero}?text=${mensaje}`, "_blank");
+  };
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md flex flex-col mt-16">
@@ -41,6 +58,13 @@ function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento,
               <option value="F">Femenino</option>
             </select>
           </div>
+          <input
+            type="tel"
+            className="border rounded px-3 py-2 w-full text-sm"
+            placeholder="Celular"
+            value={paciente.celular || ""}
+            onChange={e => onChangePaciente({ ...paciente, celular: e.target.value })}
+          />
           <input
             type="text"
             className="border rounded px-3 py-2 w-full text-sm"
@@ -134,6 +158,13 @@ function CartModal({ cart, paciente, tipoCotizacion, cuponInput, cuponDescuento,
             className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold"
             onClick={onExportPDF}
           >Exportar PDF</button>
+          <button
+            className="px-4 py-2 bg-[#25D366] text-white rounded hover:bg-[#128C7E] font-semibold flex items-center gap-2"
+            onClick={handleSendWhatsApp}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="20" height="20" fill="currentColor"><path d="M16 3C9.373 3 4 8.373 4 15c0 2.385.832 4.58 2.236 6.364L4 29l7.818-2.236A11.96 11.96 0 0 0 16 27c6.627 0 12-5.373 12-12S22.627 3 16 3zm0 22c-1.97 0-3.85-.57-5.438-1.553l-.387-.236-4.646 1.33 1.324-4.527-.252-.393A9.96 9.96 0 0 1 6 15c0-5.514 4.486-10 10-10s10 4.486 10 10-4.486 10-10 10zm5.13-7.47c-.28-.14-1.65-.81-1.9-.9-.25-.09-.43-.14-.61.14-.18.28-.7.9-.86 1.08-.16.18-.32.2-.6.07-.28-.14-1.18-.44-2.25-1.4-.83-.74-1.39-1.65-1.55-1.93-.16-.28-.02-.43.12-.57.13-.13.28-.34.42-.51.14-.17.18-.29.28-.48.09-.19.05-.36-.02-.5-.07-.14-.61-1.47-.84-2.01-.22-.53-.45-.46-.61-.47-.16-.01-.36-.01-.56-.01-.19 0-.5.07-.76.36-.26.28-1 1-.97 2.43.03 1.43 1.04 2.81 1.19 3 .15.19 2.05 3.14 5.01 4.28.7.3 1.25.48 1.68.61.71.23 1.36.2 1.87.12.57-.09 1.65-.67 1.88-1.32.23-.65.23-1.21.16-1.32-.07-.11-.25-.18-.53-.32z"/></svg>
+            Enviar por WhatsApp
+          </button>
           <button
             className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 font-semibold"
             onClick={onClearAll}
