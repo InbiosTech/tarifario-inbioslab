@@ -4,7 +4,7 @@
 export const data = [
   {
     id: 1,
-    name: "A.N.C.A ANTI-NEUTROFILOS prolactina",
+    name: "A.N.C.A ANTI-NEUTROFILOS",
     sample: "suero",
     method: "IFI - Inmunofluorescencia Indirecta",
     price1: 180,
