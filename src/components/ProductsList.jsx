@@ -9,7 +9,11 @@ import ProductsListGrid from "./ProductsListGrid/ProductsListGrid";
 import NavBar from "./NavBar/NavBar";
 import PromotionsCarousel from "./PromotionsCarousel/PromotionsCarousel";
 import ProductSearch from "./ProductSearch/ProductSearch";
+import AdminHome from "./Admin/AdminHome";
+import MovilidadForm from "./Admin/MovilidadForm";
 import { drawPdfHeader, drawPdfPatientData, drawPdfQuotationTable, drawPdfFooter } from "../utils/pdfUtils";
+
+const ADMIN_ROUTE_STORAGE_KEY = "inbioslab_admin_route";
 
 const ProductsList = ({ products }) => {
   // Estado para mostrar/desplegar el botón de WhatsApp
@@ -47,6 +51,9 @@ const ProductsList = ({ products }) => {
   const [tipoCotizacion, setTipoCotizacion] = useState("publico");
   const [showClaveModal, setShowClaveModal] = useState(false);
   const [claveInput, setClaveInput] = useState("");
+  const [showAdminClaveModal, setShowAdminClaveModal] = useState(false);
+  const [adminClaveInput, setAdminClaveInput] = useState("");
+  const [adminView, setAdminView] = useState(null);
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [showPromoModal, setShowPromoModal] = useState(false);
@@ -56,6 +63,23 @@ const ProductsList = ({ products }) => {
   // Estado para cupón
   const [cuponInput, setCuponInput] = useState("");
   const [cuponDescuento, setCuponDescuento] = useState(0);
+
+  useEffect(() => {
+    const savedAdminRoute = window.sessionStorage.getItem(ADMIN_ROUTE_STORAGE_KEY);
+    if (savedAdminRoute === "home" || savedAdminRoute === "movilidad") {
+      setAdminView(savedAdminRoute);
+      setTipoCotizacion("admin");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (adminView === "home" || adminView === "movilidad") {
+      window.sessionStorage.setItem(ADMIN_ROUTE_STORAGE_KEY, adminView);
+      return;
+    }
+    window.sessionStorage.removeItem(ADMIN_ROUTE_STORAGE_KEY);
+  }, [adminView]);
+
   const pageSize = 5;
   const filteredProducts = products ? (
     search.trim() === ""
@@ -76,8 +100,43 @@ const ProductsList = ({ products }) => {
   const handleChangeQty = (id, qty) => {
     setCart((prev) => prev.map(item => item.id === id ? { ...item, qty: Math.max(1, qty) } : item));
   };
+  const handleAddCustomItem = ({ name, price }) => {
+    const customId = `custom-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    setCart((prev) => [
+      ...prev,
+      {
+        id: customId,
+        name: (name || "").toUpperCase(),
+        qty: 1,
+        price1: Number(price) || 0,
+        price2: Number(price) || 0,
+        type: "custom",
+      },
+    ]);
+  };
+  const handleChangeItemName = (id, name) => {
+    setCart((prev) => prev.map(item => item.id === id ? { ...item, name } : item));
+  };
 
   
+
+  if (adminView === "home") {
+    return (
+      <AdminHome
+        onGoMovilidad={() => setAdminView("movilidad")}
+        onBackTarifario={() => {
+          setAdminView(null);
+          setTipoCotizacion("publico");
+        }}
+      />
+    );
+  }
+
+  if (adminView === "movilidad") {
+    return (
+      <MovilidadForm onBackHome={() => setAdminView("home")} />
+    );
+  }
 
   return (
   <div className="max-w-4xl mx-auto p-2 sm:p-4 bg-gradient-to-br from-[#f6fcfc] via-white to-[#eaf6f6] rounded-xl shadow-2xl border border-[#b2e4e5] pt-40 sm:pt-0">
@@ -125,10 +184,12 @@ const ProductsList = ({ products }) => {
       {/* NAV principal dentro del componente */}
       <NavBar
         cartCount={cart.length}
-        tipoCotizacion={tipoCotizacion}
+        tipoCotizacion={adminView ? "admin" : tipoCotizacion}
         onTipoCotizacionChange={e => {
           if (e.target.value === "convenio") {
             setShowClaveModal(true);
+          } else if (e.target.value === "admin") {
+            setShowAdminClaveModal(true);
           } else {
             setTipoCotizacion("publico");
           }
@@ -214,6 +275,8 @@ const ProductsList = ({ products }) => {
           cuponDescuento={cuponDescuento}
           onChangePaciente={setPaciente}
           onChangeQty={handleChangeQty}
+          onAddCustomItem={handleAddCustomItem}
+          onChangeItemName={handleChangeItemName}
           onRemoveItem={id => setCart(prev => prev.filter(p => p.id !== id))}
           onChangePrice={(id, value, tipo) => {
             setCart(prev => prev.map(item => {
@@ -245,6 +308,10 @@ const ProductsList = ({ products }) => {
           onExportPDF={async () => {
             if (cart.length === 0) {
               alert("Agrega al menos un producto al carrito para descargar la cotización.");
+              return;
+            }
+            if (cart.some(item => !item.name || !item.name.trim())) {
+              alert("Completa el nombre de todas las pruebas antes de exportar.");
               return;
             }
             if (!paciente.nombre) {
@@ -279,6 +346,7 @@ const ProductsList = ({ products }) => {
       {/* Modal para clave de convenio modularizado */}
       <ClaveModal
         show={showClaveModal}
+        title="Ingrese clave de convenio"
         claveInput={claveInput}
         setClaveInput={setClaveInput}
         onAccept={() => {
@@ -293,6 +361,26 @@ const ProductsList = ({ products }) => {
         onCancel={() => {
           setShowClaveModal(false);
           setClaveInput("");
+        }}
+      />
+      <ClaveModal
+        show={showAdminClaveModal}
+        title="Ingrese clave de admin"
+        claveInput={adminClaveInput}
+        setClaveInput={setAdminClaveInput}
+        onAccept={() => {
+          if (adminClaveInput === "41950361") {
+            setShowAdminClaveModal(false);
+            setAdminClaveInput("");
+            setAdminView("home");
+          } else {
+            alert("Clave admin incorrecta");
+          }
+        }}
+        onCancel={() => {
+          setShowAdminClaveModal(false);
+          setAdminClaveInput("");
+          setTipoCotizacion("publico");
         }}
       />
     {/* Botón WhatsApp modularizado */}

@@ -27,6 +27,7 @@ const NavBar = ({ cartCount, tipoCotizacion, onTipoCotizacionChange, onCartClick
         >
           <option value="publico">Cotizar precio público</option>
           <option value="convenio">Cotizar precio convenio</option>
+          <option value="admin">Ingresar como admin</option>
         </select>
         <div
           className={`relative cursor-pointer bg-white rounded-full p-2 shadow border-2 border-[#01878A] hover:scale-105 transition ${cartCount > 0 ? 'animate-bounce-short' : 'animate-pulse-slow'}`}
