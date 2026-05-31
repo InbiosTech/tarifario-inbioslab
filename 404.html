@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Redirecting...</title>
+    <script>
+      (function () {
+        var base = "/tarifario-inbioslab";
+        var pathname = window.location.pathname || "/";
+        var relativePath = pathname.startsWith(base) ? pathname.slice(base.length) : pathname;
+        if (!relativePath.startsWith("/")) {
+          relativePath = "/" + relativePath;
+        }
+
+        var query = window.location.search ? window.location.search.slice(1) : "";
+        var redirectUrl =
+          window.location.protocol +
+          "//" +
+          window.location.host +
+          base +
+          "/?p=" +
+          encodeURIComponent(relativePath) +
+          (query ? "&q=" + encodeURIComponent(query) : "") +
+          (window.location.hash || "");
+
+        window.location.replace(redirectUrl);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>
