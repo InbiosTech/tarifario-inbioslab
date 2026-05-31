@@ -32,17 +32,47 @@ const allowedOrigins = String(env.corsOrigin || "")
   .map((item) => normalizeOrigin(item))
   .filter(Boolean);
 
+function isLocalLikeOrigin(origin) {
+  const raw = String(origin || "").trim();
+  if (!raw) return false;
+
+  // Browsers send Origin: null when opening frontend from file://
+  if (raw === "null" || raw.startsWith("file://")) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(raw);
+    const host = String(parsed.hostname || "").toLowerCase();
+    return host === "localhost" || host === "127.0.0.1" || host === "::1";
+  } catch (_error) {
+    return false;
+  }
+}
+
 app.use(cors({
   origin(origin, callback) {
     if (!origin) {
+      // Non-browser requests may not send Origin (curl/server-to-server).
       callback(null, true);
       return;
     }
 
     const normalizedOrigin = normalizeOrigin(origin);
 
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(normalizedOrigin)) {
-      callback(null, true);
+    if (!env.isProduction) {
+      // In non-production, allow dynamic local testing origins.
+      callback(null, normalizedOrigin);
+      return;
+    }
+
+    if (
+      allowedOrigins.length === 0 ||
+      allowedOrigins.includes(normalizedOrigin) ||
+      isLocalLikeOrigin(origin)
+    ) {
+      // Reflect explicit request origin to support credentialed requests.
+      callback(null, normalizedOrigin);
       return;
     }
 
