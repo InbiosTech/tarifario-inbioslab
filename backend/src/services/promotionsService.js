@@ -11,6 +11,17 @@ import {
 import { getExamById, insertAuditLog } from "../repositories/examsRepository.js";
 import { normalizePromotionPayload, validatePromotionPayload } from "../utils/promotionPayload.js";
 
+function isRecoverablePromotionSchemaError(error) {
+  const code = String(error?.code || "").trim().toUpperCase();
+  return (
+    code === "ER_NO_SUCH_TABLE" ||
+    code === "ER_BAD_FIELD_ERROR" ||
+    code === "ER_TABLEACCESS_DENIED_ERROR" ||
+    code === "ER_DBACCESS_DENIED_ERROR" ||
+    code === "ER_ACCESS_DENIED_ERROR"
+  );
+}
+
 function resolveExamFundament(exam) {
   const method = String(exam?.method || "").trim();
   if (method) return method;
@@ -55,11 +66,18 @@ async function applyExamAutoData(payload) {
 }
 
 export async function getPublicPromotions(query = {}) {
-  const audience = String(query.audience || "publico").trim().toLowerCase();
-  if (audience === "convenio") {
-    return listPublicPromotionsByAudience({ audience: "convenio" });
+  try {
+    const audience = String(query.audience || "publico").trim().toLowerCase();
+    if (audience === "convenio") {
+      return listPublicPromotionsByAudience({ audience: "convenio" });
+    }
+    return listPublicPromotions();
+  } catch (error) {
+    if (!isRecoverablePromotionSchemaError(error)) {
+      throw error;
+    }
+    return [];
   }
-  return listPublicPromotions();
 }
 
 export async function getAdminPromotions(query) {
@@ -78,14 +96,26 @@ export async function getAdminPromotions(query) {
     throw badRequest("pageSize must be an integer between 1 and 100");
   }
 
-  const { items, totalItems } = await listPromotionsPaginated({
-    includeInactive,
-    search,
-    pageSize,
-    offset: (page - 1) * pageSize,
-    sortBy,
-    sortOrder,
-  });
+  let items = [];
+  let totalItems = 0;
+
+  try {
+    const response = await listPromotionsPaginated({
+      includeInactive,
+      search,
+      pageSize,
+      offset: (page - 1) * pageSize,
+      sortBy,
+      sortOrder,
+    });
+
+    items = response.items;
+    totalItems = response.totalItems;
+  } catch (error) {
+    if (!isRecoverablePromotionSchemaError(error)) {
+      throw error;
+    }
+  }
 
   return {
     items,

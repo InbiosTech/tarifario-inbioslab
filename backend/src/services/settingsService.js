@@ -1,14 +1,36 @@
 import { badRequest } from "../utils/httpErrors.js";
 import { getWhatsappQuoteNumber, setWhatsappQuoteNumber } from "../repositories/settingsRepository.js";
 
+const DEFAULT_WHATSAPP_QUOTE_NUMBER = "945241682";
+
+function isRecoverableSettingsSchemaError(error) {
+  const code = String(error?.code || "").trim().toUpperCase();
+  return (
+    code === "ER_NO_SUCH_TABLE" ||
+    code === "ER_BAD_FIELD_ERROR" ||
+    code === "ER_TABLEACCESS_DENIED_ERROR" ||
+    code === "ER_DBACCESS_DENIED_ERROR" ||
+    code === "ER_ACCESS_DENIED_ERROR"
+  );
+}
+
 function sanitizePhone(value) {
   return String(value || "").replace(/\D/g, "").trim();
 }
 
 export async function getPublicSettings() {
-  const whatsappQuoteNumber = String(await getWhatsappQuoteNumber() || "").trim();
+  let whatsappQuoteNumber = "";
+
+  try {
+    whatsappQuoteNumber = String(await getWhatsappQuoteNumber() || "").trim();
+  } catch (error) {
+    if (!isRecoverableSettingsSchemaError(error)) {
+      throw error;
+    }
+  }
+
   return {
-    whatsappQuoteNumber,
+    whatsappQuoteNumber: whatsappQuoteNumber || DEFAULT_WHATSAPP_QUOTE_NUMBER,
   };
 }
 
