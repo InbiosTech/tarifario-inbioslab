@@ -100,11 +100,12 @@ export function parseCookieHeader(cookieHeader) {
 
 export function buildAuthCookieValue(token) {
   const maxAge = Math.max(60, Math.floor((Number(env.authSessionTtlHours || 12) * 60 * 60)));
+  const sameSiteValue = env.isProduction ? "None" : "Lax";
   const parts = [
     `${env.authSessionCookieName}=${encodeURIComponent(token)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${sameSiteValue}`,
     `Max-Age=${maxAge}`,
   ];
 
@@ -116,11 +117,12 @@ export function buildAuthCookieValue(token) {
 }
 
 export function buildClearAuthCookieValue() {
+  const sameSiteValue = env.isProduction ? "None" : "Lax";
   const parts = [
     `${env.authSessionCookieName}=`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${sameSiteValue}`,
     "Max-Age=0",
   ];
 
