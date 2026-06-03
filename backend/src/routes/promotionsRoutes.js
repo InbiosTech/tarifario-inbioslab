@@ -14,6 +14,15 @@ import { badRequest } from "../utils/httpErrors.js";
 
 const router = Router();
 
+function buildPublicAssetUrl(req, rawPath) {
+  const value = String(rawPath || "").trim();
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) {
+    return value;
+  }
+  return `${req.protocol}://${req.get("host")}${value}`;
+}
+
 router.get("/", listPublicPromotionsController);
 
 router.post(
@@ -31,11 +40,12 @@ router.post(
       const saved = await saveOptimizedPromotionImage(file.buffer);
       const cardPath = saved.cardPath;
       const modalPath = saved.modalPath;
-      const cardUrl = `${req.protocol}://${req.get("host")}${cardPath}`;
-      const modalUrl = `${req.protocol}://${req.get("host")}${modalPath}`;
+      const cardUrl = buildPublicAssetUrl(req, cardPath);
+      const modalUrl = buildPublicAssetUrl(req, modalPath);
       return res.status(201).json({
         cardFileName: saved.cardFileName,
         modalFileName: saved.modalFileName,
+        storageMode: saved.storageMode || "unknown",
         cardPath,
         modalPath,
         cardUrl,

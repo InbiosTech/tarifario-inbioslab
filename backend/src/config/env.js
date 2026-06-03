@@ -37,6 +37,8 @@ export const env = {
   authSessionSecret: getRuntimeVar("AUTH_SESSION_SECRET", "AUTH_SESSION_SECRET_PROD", "change-me-session-secret"),
   authSessionCookieName: process.env.AUTH_SESSION_COOKIE_NAME || "inbioslab_admin_session",
   authSessionTtlHours: Number(process.env.AUTH_SESSION_TTL_HOURS || 12),
+  promotionsAssetsBucket: getRuntimeVar("PROMOTIONS_ASSETS_BUCKET", "PROMOTIONS_ASSETS_BUCKET_PROD", ""),
+  promotionsAssetsPublicBaseUrl: getRuntimeVar("PROMOTIONS_ASSETS_PUBLIC_BASE_URL", "PROMOTIONS_ASSETS_PUBLIC_BASE_URL_PROD", ""),
   db: {
     host: getDbVar("DB_HOST", "DB_HOST_PROD", "127.0.0.1"),
     port: Number(getDbVar("DB_PORT", "DB_PORT_PROD", "3306")),
