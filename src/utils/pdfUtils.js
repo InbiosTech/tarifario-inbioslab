@@ -44,6 +44,11 @@ export function drawPdfPatientData(doc, paciente, tipoCotizacion) {
   }
   y += 6;
   doc.setFont('helvetica', 'bold');
+  doc.text(`Medico referencia:`, 20, y);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`${(paciente.medicoReferencia || "-").toUpperCase()}` , 58, y, { maxWidth: 130 });
+  y += 6;
+  doc.setFont('helvetica', 'bold');
   doc.text(`Fecha:`, 20, y);
   doc.setFont('helvetica', 'normal');
   doc.text(`${new Date().toLocaleDateString()}` , 45, y);
@@ -54,7 +59,7 @@ export function drawPdfPatientData(doc, paciente, tipoCotizacion) {
   return y + 10;
 }
 
-export function drawPdfQuotationTable(doc, cart, tipoCotizacion, cuponDescuento, startY) {
+export function drawPdfQuotationTable(doc, cart, tipoCotizacion, cuponDescuento, descuentoManual, startY) {
   doc.setFontSize(9); // fuente más pequeña
   doc.setFont('helvetica', 'bold');
   doc.text('Cotización:', 20, startY);
@@ -72,32 +77,63 @@ export function drawPdfQuotationTable(doc, cart, tipoCotizacion, cuponDescuento,
   doc.text('Subtotal', 155, y);
   y += 7;
   doc.setFont('helvetica', 'normal');
+  const subtotalBase = cart.reduce((acc, item) => acc + Number((tipoCotizacion === "convenio" ? item.price2 : item.price1) || 0) * Number(item.qty || 0), 0);
+  const descuentoCuponMonto = tipoCotizacion === "publico" ? subtotalBase * cuponDescuento : 0;
+  const subtotalTrasCupon = subtotalBase - descuentoCuponMonto;
+  const descuentoManualAplicado = tipoCotizacion === "publico"
+    ? Math.min(Math.max(Number(descuentoManual) || 0, 0), subtotalTrasCupon)
+    : 0;
+  const totalFinal = Math.max(subtotalTrasCupon - descuentoManualAplicado, 0);
+
   cart.forEach((item, idx) => {
     doc.rect(20, y - 5, 170, 8);
     doc.text(String(idx + 1), 23, y);
     doc.text(item.name.toUpperCase(), 30, y, { maxWidth: 85 });
     doc.text(String(item.qty), 120, y);
-    const precio = ((tipoCotizacion === "convenio" ? item.price2 : item.price1) * (1 - cuponDescuento)).toFixed(2);
+    const precioBase = Number(tipoCotizacion === "convenio" ? item.price2 : item.price1) || 0;
+    const precio = (tipoCotizacion === "publico" ? precioBase * (1 - cuponDescuento) : precioBase).toFixed(2);
     doc.text(`S/ ${precio}`, 135, y);
-    doc.text(`S/ ${(item.qty * (tipoCotizacion === "convenio" ? item.price2 : item.price1) * (1 - cuponDescuento)).toFixed(2)}`, 155, y);
+    doc.text(`S/ ${(Number(item.qty || 0) * Number(precio)).toFixed(2)}`, 155, y);
     y += 8;
   });
   // Total
   doc.setFont('helvetica', 'bold');
   doc.text('Total', 135, y);
-  doc.text(`S/ ${cart.reduce((acc, item) => acc + ((tipoCotizacion === "convenio" ? item.price2 : item.price1) * (tipoCotizacion === "publico" ? (1 - cuponDescuento) : 1)) * item.qty, 0).toFixed(2)}`, 155, y);
+  doc.text(`S/ ${totalFinal.toFixed(2)}`, 155, y);
   return y + 10;
 }
 
-export function drawPdfFooter(doc, tipoCotizacion, cuponDescuento, cuponInput, y) {
+export function drawPdfFooter(doc, cart, tipoCotizacion, cuponDescuento, cuponInput, descuentoManual, y) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  // Nota de cupón si corresponde
+  const subtotalBase = cart.reduce((acc, item) => acc + Number((tipoCotizacion === "convenio" ? item.price2 : item.price1) || 0) * Number(item.qty || 0), 0);
+  const descuentoCuponMonto = tipoCotizacion === "publico" ? subtotalBase * cuponDescuento : 0;
+  const subtotalTrasCupon = subtotalBase - descuentoCuponMonto;
+  const descuentoManualAplicado = tipoCotizacion === "publico"
+    ? Math.min(Math.max(Number(descuentoManual) || 0, 0), subtotalTrasCupon)
+    : 0;
+  const descuentoTotal = descuentoCuponMonto + descuentoManualAplicado;
+
   if (tipoCotizacion === "publico" && cuponDescuento > 0) {
     doc.setTextColor(0, 128, 0);
     doc.text(`Cupón aplicado: ${cuponInput.trim().toUpperCase()} (${(cuponDescuento * 100).toFixed(0)}% de descuento)`, 20, y);
     doc.setTextColor(0, 0, 0);
     y += 6;
   }
+
+  if (tipoCotizacion === "publico" && descuentoManualAplicado > 0) {
+    doc.setTextColor(0, 128, 0);
+    doc.text(`Descuento manual aplicado: S/ ${descuentoManualAplicado.toFixed(2)}`, 20, y);
+    doc.setTextColor(0, 0, 0);
+    y += 6;
+  }
+
+  if (tipoCotizacion === "publico" && descuentoTotal > 0) {
+    doc.setTextColor(0, 128, 0);
+    doc.text(`Descuento total de su cotización: S/ ${descuentoTotal.toFixed(2)}`, 20, y);
+    doc.setTextColor(0, 0, 0);
+    y += 6;
+  }
+
   doc.text('Esta cotización es referencial y válida solo para el día de emisión.', 20, y);
 }

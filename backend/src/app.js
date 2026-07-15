@@ -6,12 +6,14 @@ import examsRoutes from "./routes/examsRoutes.js";
 import promotionsRoutes from "./routes/promotionsRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import settingsRoutes from "./routes/settingsRoutes.js";
+import inventoryRoutes from "./routes/inventoryRoutes.js";
 import { env } from "./config/env.js";
 import { dbHealthcheck } from "./db/pool.js";
 import { HttpError } from "./utils/httpErrors.js";
 import { attachAuthContext } from "./middleware/requireWriteAuth.js";
 
 const app = express();
+app.set("trust proxy", true);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const uploadsDir = path.resolve(__dirname, "..", "uploads");
@@ -97,6 +99,7 @@ app.use("/api/exams", examsRoutes);
 app.use("/api/promotions", promotionsRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/inventory", inventoryRoutes);
 
 app.use((err, _req, res, _next) => {
   if (err instanceof HttpError) {

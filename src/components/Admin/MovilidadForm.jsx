@@ -1,6 +1,24 @@
 import PropTypes from "prop-types";
-import { useMemo, useState } from "react";
-import { generateMovilidadPdf } from "../../utils/movilidadPdfUtils";
+import { useEffect, useMemo, useState } from "react";
+
+const MOVILIDAD_STORAGE_KEY = "inbioslab_movilidad_form";
+
+function createEmptyRow(defaultDate) {
+  return {
+    id: `row-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    fecha: defaultDate,
+    destino: "",
+    motivo: "",
+    importe: "",
+  };
+}
+
+function sumImportes(rows) {
+  return rows.reduce((acc, row) => {
+    const amount = Number(row?.importe);
+    return Number.isFinite(amount) ? acc + amount : acc;
+  }, 0);
+}
 
 const EMPRESAS = [
   { razonSocial: "UNITED TRADING", ruc: "20153361968" },
@@ -16,24 +34,64 @@ function MovilidadForm({ onBackHome }) {
     return `${year}-${month}-${day}`;
   }, []);
 
-  const [header, setHeader] = useState({
-    razonSocial: "",
-    ruc: "",
-    trabajador: "",
-    dni: "",
-    area: "",
-    cargo: "",
-    fechaEmision: today,
+  const [header, setHeader] = useState(() => {
+    const fallbackHeader = {
+      razonSocial: "",
+      ruc: "",
+      trabajador: "",
+      dni: "",
+      area: "",
+      cargo: "",
+      fechaEmision: today,
+    };
+
+    try {
+      const saved = localStorage.getItem(MOVILIDAD_STORAGE_KEY);
+      if (!saved) {
+        return fallbackHeader;
+      }
+      const parsed = JSON.parse(saved);
+      return {
+        ...fallbackHeader,
+        ...parsed?.header,
+      };
+    } catch {
+      return fallbackHeader;
+    }
   });
 
-  const [rows, setRows] = useState([
-    { id: `row-${Date.now()}`, fecha: today, destino: "", motivo: "", importe: "" },
-  ]);
+  const [rows, setRows] = useState(() => {
+    try {
+      const saved = localStorage.getItem(MOVILIDAD_STORAGE_KEY);
+      if (!saved) {
+        return [createEmptyRow(today)];
+      }
+      const parsed = JSON.parse(saved);
+      const savedRows = Array.isArray(parsed?.rows) ? parsed.rows : [];
+      if (savedRows.length === 0) {
+        return [createEmptyRow(today)];
+      }
+
+      return savedRows.map((row) => ({
+        id: row.id || `row-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        fecha: row.fecha || today,
+        destino: row.destino || "",
+        motivo: row.motivo || "",
+        importe: row.importe || "",
+      }));
+    } catch {
+      return [createEmptyRow(today)];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(MOVILIDAD_STORAGE_KEY, JSON.stringify({ header, rows }));
+  }, [header, rows]);
 
   const addRow = () => {
     setRows((prev) => [
       ...prev,
-      { id: `row-${Date.now()}-${Math.floor(Math.random() * 1000)}`, fecha: today, destino: "", motivo: "", importe: "" },
+      createEmptyRow(today),
     ]);
   };
 
@@ -45,13 +103,39 @@ function MovilidadForm({ onBackHome }) {
     setRows((prev) => prev.filter((row) => row.id !== id));
   };
 
-  const handleGeneratePdf = async () => {
+  const validateRows = () => {
     const rowsWithData = rows.filter((row) => row.fecha || row.destino || row.motivo || row.importe);
     if (rowsWithData.length === 0) {
       alert("Agrega al menos una fila con datos para generar la planilla.");
+      return false;
+    }
+    return true;
+  };
+
+  const totalImporte = useMemo(() => sumImportes(rows), [rows]);
+
+  const handleGeneratePdf = async () => {
+    if (!validateRows()) {
       return;
     }
+    const { generateMovilidadPdf } = await import("../../utils/movilidadPdfExport");
     await generateMovilidadPdf(header, rows, `${import.meta.env.BASE_URL}firma.png`);
+  };
+
+  const handleGenerateWord = async () => {
+    if (!validateRows()) {
+      return;
+    }
+    const { generateMovilidadWord } = await import("../../utils/movilidadWordExport");
+    await generateMovilidadWord(header, rows, `${import.meta.env.BASE_URL}firma.png`);
+  };
+
+  const handleGenerateExcel = async () => {
+    if (!validateRows()) {
+      return;
+    }
+    const { generateMovilidadExcel } = await import("../../utils/movilidadExcelExport");
+    await generateMovilidadExcel(header, rows, `${import.meta.env.BASE_URL}firma.png`);
   };
 
   return (
@@ -128,12 +212,23 @@ function MovilidadForm({ onBackHome }) {
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr className="bg-[#f6fcfc]">
+              <td className="border px-2 py-2 text-right font-bold text-[#016b6d]" colSpan={3}>TOTAL</td>
+              <td className="border px-2 py-2 font-bold text-[#016b6d]">
+                S/ {totalImporte.toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </td>
+              <td className="border px-2 py-2" />
+            </tr>
+          </tfoot>
         </table>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 mt-4">
         <button className="px-4 py-2 bg-[#01878A] text-white rounded hover:bg-[#016b6d] font-semibold" onClick={addRow}>Agregar fila</button>
         <button className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 font-semibold" onClick={handleGeneratePdf}>Generar PDF</button>
+        <button className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-semibold" onClick={handleGenerateWord}>Generar Word</button>
+        <button className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 font-semibold" onClick={handleGenerateExcel}>Generar Excel</button>
       </div>
     </div>
   );

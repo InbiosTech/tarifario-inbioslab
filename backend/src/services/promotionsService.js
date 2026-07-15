@@ -66,16 +66,21 @@ async function applyExamAutoData(payload) {
 }
 
 export async function getPublicPromotions(query = {}) {
+  const audience = String(query.audience || "publico").trim().toLowerCase();
+
   try {
-    const audience = String(query.audience || "publico").trim().toLowerCase();
     if (audience === "convenio") {
       return listPublicPromotionsByAudience({ audience: "convenio" });
     }
     return listPublicPromotions();
   } catch (error) {
-    if (!isRecoverablePromotionSchemaError(error)) {
-      throw error;
-    }
+    // Public landing should remain available even if promotions query fails.
+    console.error("Failed to list public promotions", {
+      audience,
+      code: error?.code,
+      message: error?.message,
+    });
+
     return [];
   }
 }

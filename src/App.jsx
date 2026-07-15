@@ -3,6 +3,7 @@ import ProductsList from "./components/ProductsList";
 import { dataSorted } from "./db/data.js";
 
 const API_BASE_URL = String(import.meta.env.VITE_API_BASE_URL || "").trim();
+const EXAMS_UPDATED_STORAGE_KEY = "inbioslab_exams_updated_at";
 
 function normalizePathname(value) {
   return String(value || "").replace(/\/+$/, "") || "/";
@@ -19,24 +20,36 @@ function buildPublicRoute(baseUrl) {
   return `${normalizedBase}/publico`;
 }
 
+function getPublicCanonicalRedirectTarget() {
+  const params = new URLSearchParams(window.location.search || "");
+  if (params.get("p")) {
+    return "";
+  }
+
+  const base = String(import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
+  const currentPath = String(window.location.pathname || "/");
+  if (!isBaseRootPath(currentPath, base)) {
+    return "";
+  }
+
+  const publicPath = buildPublicRoute(base);
+  const targetUrl = `${publicPath}${window.location.search || ""}${window.location.hash || ""}`;
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (targetUrl === currentUrl) {
+    return "";
+  }
+
+  return targetUrl;
+}
+
 function restoreSpaPathFromQuery() {
   const params = new URLSearchParams(window.location.search || "");
   const redirectedPath = params.get("p");
-  const base = String(import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
   if (!redirectedPath) {
-    const currentPath = String(window.location.pathname || "/");
-    if (isBaseRootPath(currentPath, base)) {
-      const publicPath = buildPublicRoute(base);
-      const nextUrl = `${publicPath}${window.location.search || ""}${window.location.hash || ""}`;
-      if (`${window.location.pathname}${window.location.search}${window.location.hash}` !== nextUrl) {
-        window.history.replaceState(null, "", nextUrl);
-      }
-      return publicPath;
-    }
-
-    return currentPath;
+    return String(window.location.pathname || "/");
   }
 
+  const base = String(import.meta.env.BASE_URL || "/").replace(/\/+$/, "");
   const redirectedQuery = params.get("q");
   const safePath = String(redirectedPath).startsWith("/")
     ? String(redirectedPath)
@@ -78,8 +91,32 @@ function resolveAppModeFromPath() {
 }
 
 function App() {
+  const [redirectTarget] = useState(getPublicCanonicalRedirectTarget);
   const [products, setProducts] = useState(dataSorted);
-  const [appMode] = useState(resolveAppModeFromPath);
+  const [appMode] = useState(() => (redirectTarget ? "publico" : resolveAppModeFromPath()));
+
+  useEffect(() => {
+    if (!redirectTarget) return;
+
+    const timer = window.setTimeout(() => {
+      window.location.replace(redirectTarget);
+    }, 550);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [redirectTarget]);
+
+  if (redirectTarget) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f6fcfc] via-white to-[#eaf6f6] px-4">
+        <div className="max-w-md w-full rounded-2xl border border-[#b2e4e5] bg-white shadow-xl p-6 text-center">
+          <h2 className="text-xl font-black text-[#017f82]">Redirigiendo a Tarifa Publico...</h2>
+          <p className="mt-2 text-sm text-[#016b6d]">Un momento por favor.</p>
+        </div>
+      </div>
+    );
+  }
 
   useEffect(() => {
     if (!API_BASE_URL) {
@@ -141,13 +178,36 @@ function App() {
       fetchProducts();
     };
 
+    const handleExamsStorageUpdated = (event) => {
+      if (event.key === EXAMS_UPDATED_STORAGE_KEY) {
+        fetchProducts();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchProducts();
+      }
+    };
+
+    const examsRefreshIntervalId = window.setInterval(() => {
+      if (!document.hidden) {
+        fetchProducts();
+      }
+    }, 30000);
+
     window.addEventListener("inbioslab:exams-updated", handleExamsUpdated);
+    window.addEventListener("storage", handleExamsStorageUpdated);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     fetchProducts();
 
     return () => {
       isCancelled = true;
+      window.clearInterval(examsRefreshIntervalId);
       window.removeEventListener("inbioslab:exams-updated", handleExamsUpdated);
+      window.removeEventListener("storage", handleExamsStorageUpdated);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, []);
 
